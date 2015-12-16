@@ -2,16 +2,6 @@ import std.stdio;
 import std.format;
 import std.string;
 
-enum STATE
-{
-    START,
-    NORMAL,
-    BACKSLASH,
-    HEX,
-    HEX1,
-    END,
-}
-
 void main()
 {
     uint totalLength = 0;
