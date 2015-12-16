@@ -1,0 +1,7 @@
+.dub
+dub.selections.json
+*.exe
+*.pdb
+*.obj
+*.lib
+*.ilk
