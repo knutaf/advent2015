@@ -19,101 +19,27 @@ void main(string[] args)
 
     writefln("input: %s", input);
 
-    /*
-    ulong rangeHigh = 0;
-    foreach (ulong num; 1 .. (input / 2))
+    ulong[] houses;
+    houses.length = input / presentMultiplier;
+
+    foreach (ulong elfNum; 1 .. houses.length)
     {
-        if (((num * (num + 1)) / 2) * presentMultiplier >= input)
+        for (ulong houseNumber = elfNum; houseNumber < houses.length && elfNum * visitLimit >= houseNumber; houseNumber += elfNum)
         {
-            rangeHigh = num;
-            break;
+            houses[houseNumber] += presentMultiplier * elfNum;
         }
     }
-    */
 
-    ulong rangeLow = 1;
-    ulong rangeHigh = input / 20;
-    /*
-    foreach (ulong attempt; 1 .. input)
+    ulong minPresentsOverInput = ulong.max;
+    ulong minHouseNum = houses.length;
+    foreach (ulong houseNum, const ref ulong presents; houses)
     {
-        for (ulong num = 1; num < input / presentMultiplier; num *= attempt)
+        if (presents >= input && houseNum < minHouseNum)
         {
-            ulong sumOfFactors = 0;
-            for (ulong elfNum = 1; elfNum <= num; elfNum *= attempt)
-            {
-                sumOfFactors += elfNum * presentMultiplier;
-                if (attempt == 1)
-                {
-                    elfNum++;
-                }
-            }
-
-            writefln("sum for power of %s %s is %s", attempt, num, sumOfFactors);
-
-            if (sumOfFactors <= input && num > rangeLow)
-            {
-                rangeLow = num;
-            }
-
-            if (attempt == 1)
-            {
-                num++;
-            }
+            minPresentsOverInput = presents;
+            minHouseNum = houseNum;
         }
     }
-    */
 
-    writefln("range: %s - %s", rangeLow, rangeHigh);
-
-    TaskPool tp = new TaskPool();
-    //ulong[] sums;
-    //sums.length = input / 20;
-    foreach (ulong houseNum; tp.parallel(takeExactly(sequence!("a[0] + n")(799000), input / 20), 1000))
-    {
-        //ulong[] elves = [];
-
-        uint numFactors = 0;
-        ulong sumOfFactors = 0;
-        for (ulong elfNum = houseNum; (elfNum * visitLimit) >= houseNum && elfNum >= 1; elfNum--)
-        {
-            if ((houseNum % elfNum) == 0)
-            {
-                sumOfFactors += elfNum;
-                numFactors++;
-                //elves ~= elfNum;
-            }
-            else if ((((elfNum * (elfNum + 1)) / 2) + sumOfFactors) * presentMultiplier < input)
-            {
-                break;
-            }
-        }
-
-        /*
-        foreach (ulong elfNum; 1 .. houseNum+1)
-        {
-            if ((houseNum % elfNum) == 0)
-            {
-                sumOfFactors += elfNum;
-                //elves ~= elfNum;
-            }
-        }
-        */
-
-        sumOfFactors *= presentMultiplier;
-
-        //writefln("house %s got %s presents", houseNum, sumOfFactors);
-
-        if (sumOfFactors >= input || (houseNum % 1000) == 0)
-        {
-            auto th = Thread.getThis();
-            if (th.name == "")
-            {
-                th.name = format("%s", houseNum);
-            }
-
-            //writefln("house %s got %s presents (%s)", houseNum, sumOfFactors, elves);
-            writefln("%s%s: house %s got %s presents (%s factors)", (sumOfFactors >= input ? "YAY " : ""), th.name, houseNum, sumOfFactors, numFactors);
-            //break;
-        }
-    }
+    writefln("min house: %s with %s presents", minHouseNum, minPresentsOverInput);
 }
