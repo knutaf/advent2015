@@ -27,21 +27,21 @@ void main()
     auto rxDamage = ctRegex!`^Damage: (\d+)$`;
     auto rxArmor = ctRegex!`^Armor: (\d+)$`;
     uint bossHitPoints = 0;
-    uint bossDamage = 0;
-    uint bossArmor = 0;
+    uint bossDamageStat = 0;
+    uint bossArmorStat = 0;
     foreach (char[] l; stdin.byLine())
     {
         string line = l.idup();
         trySetUintFromRx(line, rxHitPoints, bossHitPoints);
-        trySetUintFromRx(line, rxDamage, bossDamage);
-        trySetUintFromRx(line, rxArmor, bossArmor);
+        trySetUintFromRx(line, rxDamage, bossDamageStat);
+        trySetUintFromRx(line, rxArmor, bossArmorStat);
     }
 
-    writefln("boss hp: %s, damage: %s, armor %s", bossHitPoints, bossDamage, bossArmor);
+    writefln("boss hp: %s, damage: %s, armor %s", bossHitPoints, bossDamageStat, bossArmorStat);
 
     if (bossHitPoints == 0 ||
-        bossDamage == 0 ||
-        bossArmor == 0)
+        bossDamageStat == 0 ||
+        bossArmorStat == 0)
     {
         throw new Exception("missing required boss params!");
     }
@@ -62,6 +62,7 @@ void main()
     armor["Platemail"] = Item(102, 0, 5);
 
     Item[string] rings;
+    rings["None"] = Item(0, 0, 0);
     rings["Damage_1"] = Item(25, 1, 0);
     rings["Damage_2"] = Item(50, 2, 0);
     rings["Damage_3"] = Item(100, 3, 0);
@@ -78,4 +79,72 @@ void main()
     writefln("weapons: %s", weaponNames);
     writefln("armor: %s", armorNames);
     writefln("rings: %s", ringNames);
+
+    uint getCost(in Item*[] items ...)
+    {
+        return items.map!(a => a !is null ? a.cost : 0).sum();
+    }
+
+    bool simulate(in Item*[] items ...)
+    {
+        uint playerDamage = items.map!(a => a !is null ? a.damage : 0).sum();
+        uint playerArmor = items.map!(a => a !is null ? a.armor : 0).sum();
+
+        uint bossDamage;
+        if (playerDamage <= bossArmorStat)
+        {
+            playerDamage = 1;
+        }
+        else
+        {
+            playerDamage -= bossArmorStat;
+        }
+
+        if (bossDamageStat <= playerArmor)
+        {
+            bossDamage = 1;
+        }
+        else
+        {
+            bossDamage = bossDamageStat - playerArmor;
+        }
+
+        float roundsToKillBoss = cast(float)bossHitPoints / playerDamage;
+        float roundsToKillPlayer = cast(float)playerHp / bossDamage;
+
+        writefln("player: %s/%s/%s. boss: %s/%s/%s. %.1f vs %.1f", playerHp, playerDamage, playerArmor, bossHitPoints, bossDamage, bossArmorStat, roundsToKillBoss, roundsToKillPlayer);
+
+        return (roundsToKillBoss <= roundsToKillPlayer);
+    }
+
+    /*
+    uint outfitItems(in Item* weapon, in Item* armor, in Item* ring1, in Item* ring2)
+    {
+        uint cost = getCost(weapon, armor, ring1, ring2);
+        bool outcome = simulate(weapon, armor, ring1, ring2);
+
+        if (outcome)
+        {
+            return outcome;
+        }
+        else
+        {
+            if (weapon !is null)
+            {
+                foreach (const ref Item weap; weapons)
+                {
+                    outfitItems(&weap, armor, ring1, ring2);
+                }
+            }
+            else
+            {
+                if (simulate(weapon, armor, ring1, ring2))
+                {
+                }
+            }
+        }
+    }
+    */
+
+    writeln(simulate(&weapons["Greataxe"], null, null, null));
 }
