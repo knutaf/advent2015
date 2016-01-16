@@ -4,9 +4,11 @@ import std.string;
 import std.regex;
 import std.algorithm;
 import std.array;
+import std.math;
 
 struct Item
 {
+    string name;
     uint cost;
     uint damage;
     uint armor;
@@ -46,39 +48,32 @@ void main()
         throw new Exception("missing required boss params!");
     }
 
-    Item[string] weapons;
-    weapons["Dagger"] = Item(8, 4, 0);
-    weapons["Shortsword"] = Item(10, 5, 0);
-    weapons["Warhammer"] = Item(25, 6, 0);
-    weapons["Longsword"] = Item(40, 7, 0);
-    weapons["Greataxe"] = Item(74, 8, 0);
+    Item[] weapons;
+    weapons ~= Item("Dagger", 8, 4, 0);
+    weapons ~= Item("Shortsword", 10, 5, 0);
+    weapons ~= Item("Warhammer", 25, 6, 0);
+    weapons ~= Item("Longsword", 40, 7, 0);
+    weapons ~= Item("Greataxe", 74, 8, 0);
 
-    Item[string] armor;
-    armor["None"] = Item(0, 0, 0);
-    armor["Leather"] = Item(13, 0, 1);
-    armor["Chainmail"] = Item(31, 0, 2);
-    armor["Splintmail"] = Item(53, 0, 3);
-    armor["Bandedmail"] = Item(75, 0, 4);
-    armor["Platemail"] = Item(102, 0, 5);
+    Item[] armors;
+    armors ~= Item("None", 0, 0, 0);
+    armors ~= Item("Leather", 13, 0, 1);
+    armors ~= Item("Chainmail", 31, 0, 2);
+    armors ~= Item("Splintmail", 53, 0, 3);
+    armors ~= Item("Bandedmail", 75, 0, 4);
+    armors ~= Item("Platemail", 102, 0, 5);
 
-    Item[string] rings;
-    rings["None"] = Item(0, 0, 0);
-    rings["Damage_1"] = Item(25, 1, 0);
-    rings["Damage_2"] = Item(50, 2, 0);
-    rings["Damage_3"] = Item(100, 3, 0);
-    rings["Defense_1"] = Item(20, 0, 1);
-    rings["Defense_2"] = Item(40, 0, 2);
-    rings["Defense_3"] = Item(80, 0, 3);
+    Item[] rings;
+    rings ~= Item("None_1", 0, 0, 0);
+    rings ~= Item("None_2", 0, 0, 0);
+    rings ~= Item("Damage_1", 25, 1, 0);
+    rings ~= Item("Damage_2", 50, 2, 0);
+    rings ~= Item("Damage_3", 100, 3, 0);
+    rings ~= Item("Defense_1", 20, 0, 1);
+    rings ~= Item("Defense_2", 40, 0, 2);
+    rings ~= Item("Defense_3", 80, 0, 3);
 
     uint playerHp = 100;
-
-    string[] weaponNames = weapons.keys.sort!((string a, string b) { return weapons[a].cost < weapons[b].cost;})().array();
-    string[] armorNames = armor.keys.sort!((string a, string b) { return armor[a].cost < armor[b].cost;})().array();
-    string[] ringNames = rings.keys.sort!((string a, string b) { return rings[a].cost < rings[b].cost;})().array();
-
-    writefln("weapons: %s", weaponNames);
-    writefln("armor: %s", armorNames);
-    writefln("rings: %s", ringNames);
 
     uint getCost(in Item*[] items ...)
     {
@@ -98,6 +93,7 @@ void main()
         else
         {
             playerDamage -= bossArmorStat;
+            assert(playerDamage >= 1);
         }
 
         if (bossDamageStat <= playerArmor)
@@ -107,44 +103,174 @@ void main()
         else
         {
             bossDamage = bossDamageStat - playerArmor;
+            assert(bossDamage >= 1);
         }
 
         float roundsToKillBoss = cast(float)bossHitPoints / playerDamage;
         float roundsToKillPlayer = cast(float)playerHp / bossDamage;
 
-        writefln("player: %s/%s/%s. boss: %s/%s/%s. %.1f vs %.1f", playerHp, playerDamage, playerArmor, bossHitPoints, bossDamage, bossArmorStat, roundsToKillBoss, roundsToKillPlayer);
+        writefln("%s: %s/%s/%s. boss: %s/%s/%s. %.1f vs %.1f -> %s [%s]",
+            getCost(items),
+            playerHp,
+            playerDamage,
+            playerArmor,
+            bossHitPoints,
+            bossDamage,
+            bossArmorStat,
+            roundsToKillBoss,
+            roundsToKillPlayer,
+            (ceil(roundsToKillBoss) <= ceil(roundsToKillPlayer)) ? "win" : "lose",
+            items.map!(a => a.name).join(", "));
 
-        return (roundsToKillBoss <= roundsToKillPlayer);
+        return (ceil(roundsToKillBoss) <= ceil(roundsToKillPlayer));
     }
 
-    /*
-    uint outfitItems(in Item* weapon, in Item* armor, in Item* ring1, in Item* ring2)
+    uint outfitToWin(in Item* weapon, in Item* armor, in Item* ring1, in Item* ring2)
     {
-        uint cost = getCost(weapon, armor, ring1, ring2);
-        bool outcome = simulate(weapon, armor, ring1, ring2);
+        uint cost = uint.max;
 
-        if (outcome)
+        if (weapon !is null)
         {
-            return outcome;
-        }
-        else
-        {
-            if (weapon !is null)
+            if (armor !is null)
             {
-                foreach (const ref Item weap; weapons)
+                if (ring1 !is null)
                 {
-                    outfitItems(&weap, armor, ring1, ring2);
+                    if (ring2 !is null)
+                    {
+                        assert(ring1.name != ring2.name);
+
+                        if (simulate(weapon, armor, ring1, ring2))
+                        {
+                            cost = getCost(weapon, armor, ring1, ring2);
+                        }
+                    }
+                    else
+                    {
+                        foreach (ref Item r2; rings)
+                        {
+                            if (r2.name != ring1.name)
+                            {
+                                uint newCost = outfitToWin(weapon, armor, ring1, &r2);
+                                if (newCost < cost)
+                                {
+                                    cost = newCost;
+                                }
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    foreach (ref Item r1; rings)
+                    {
+                        uint newCost = outfitToWin(weapon, armor, &r1, ring2);
+                        if (newCost < cost)
+                        {
+                            cost = newCost;
+                        }
+                    }
                 }
             }
             else
             {
-                if (simulate(weapon, armor, ring1, ring2))
+                foreach (ref Item arm; armors)
                 {
+                    uint newCost = outfitToWin(weapon, &arm, ring1, ring2);
+                    if (newCost < cost)
+                    {
+                        cost = newCost;
+                    }
                 }
             }
         }
-    }
-    */
+        else
+        {
+            foreach (ref Item weap; weapons)
+            {
+                uint newCost = outfitToWin(&weap, armor, ring1, ring2);
+                if (newCost < cost)
+                {
+                    cost = newCost;
+                }
+            }
+        }
 
-    writeln(simulate(&weapons["Greataxe"], null, null, null));
+        return cost;
+    }
+
+    uint outfitToLose(in Item* weapon, in Item* armor, in Item* ring1, in Item* ring2)
+    {
+        uint cost = 0;
+
+        if (weapon !is null)
+        {
+            if (armor !is null)
+            {
+                if (ring1 !is null)
+                {
+                    if (ring2 !is null)
+                    {
+                        assert(ring1.name != ring2.name);
+
+                        if (!simulate(weapon, armor, ring1, ring2))
+                        {
+                            cost = getCost(weapon, armor, ring1, ring2);
+                        }
+                    }
+                    else
+                    {
+                        foreach (ref Item r2; rings)
+                        {
+                            if (r2.name != ring1.name)
+                            {
+                                uint newCost = outfitToLose(weapon, armor, ring1, &r2);
+                                if (newCost > cost)
+                                {
+                                    cost = newCost;
+                                }
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    foreach (ref Item r1; rings)
+                    {
+                        uint newCost = outfitToLose(weapon, armor, &r1, ring2);
+                        if (newCost > cost)
+                        {
+                            cost = newCost;
+                        }
+                    }
+                }
+            }
+            else
+            {
+                foreach (ref Item arm; armors)
+                {
+                    uint newCost = outfitToLose(weapon, &arm, ring1, ring2);
+                    if (newCost > cost)
+                    {
+                        cost = newCost;
+                    }
+                }
+            }
+        }
+        else
+        {
+            foreach (ref Item weap; weapons)
+            {
+                uint newCost = outfitToLose(&weap, armor, ring1, ring2);
+                if (newCost > cost)
+                {
+                    cost = newCost;
+                }
+            }
+        }
+
+        return cost;
+    }
+
+    writeln(outfitToWin(null, null, null, null));
+    writeln(outfitToLose(null, null, null, null));
 }
