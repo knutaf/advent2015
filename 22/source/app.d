@@ -65,4 +65,50 @@ void main()
 
     immutable uint playerInitialHp = 50;
     immutable uint playerInitialMana = 500;
+
+    struct GameState
+    {
+        uint playerHp;
+        uint playerMana;
+        uint playerArmor;
+
+        uint bossHp;
+
+        uint drainTurnsLeft;
+        uint shieldTurnsLeft;
+        uint poisonTurnsLeft;
+        uint rechargeTurnsLeft;
+
+        pure bool drainActive()
+        {
+            return drainTurnsLeft > 0;
+        }
+
+        pure bool shieldActive()
+        {
+            return shieldTurnsLeft > 0;
+        }
+
+        pure bool poisonActive()
+        {
+            return poisonTurnsLeft > 0;
+        }
+
+        pure bool rechargeActive()
+        {
+            return rechargeTurnsLeft > 0;
+        }
+
+        pure string toString()
+        {
+            return format("player: %s hp, %s mana, %s armor. boss: %s hp. drain: %s, shield: %s, poison: %s, recharge: %s", playerHp, playerMana, playerArmor, bossHp, drainTurnsLeft, shieldTurnsLeft, poisonTurnsLeft, rechargeTurnsLeft);
+        }
+    }
+
+    GameState gs;
+    gs.playerHp = playerInitialHp;
+    gs.playerMana = playerInitialMana;
+    gs.bossHp = bossHitPoints;
+
+    writeln(gs);
 }
