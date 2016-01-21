@@ -116,4 +116,63 @@ void main()
     }
 
     writeln(prog.map!(a => a.toString()).join("\n"));
+
+    uint[string] reg;
+    reg["a"] = 1;
+    reg["b"] = 0;
+
+    int ip = 0;
+    while (ip >= 0 && ip < prog.length)
+    {
+        int nextIP;
+        const(Instruction*) inst = &prog[ip];
+        final switch (inst.opcode)
+        {
+        case Opcode.hlf:
+            reg[inst.reg] /= 2;
+            nextIP = ip + 1;
+            break;
+
+        case Opcode.tpl:
+            reg[inst.reg] *= 3;
+            nextIP = ip + 1;
+            break;
+
+        case Opcode.inc:
+            reg[inst.reg]++;
+            nextIP = ip + 1;
+            break;
+
+        case Opcode.jmp:
+            nextIP = ip + inst.num;
+            break;
+
+        case Opcode.jie:
+            if ((reg[inst.reg] % 2) == 0)
+            {
+                nextIP = ip + inst.num;
+            }
+            else
+            {
+                nextIP = ip + 1;
+            }
+            break;
+
+        case Opcode.jio:
+            if (reg[inst.reg] == 1)
+            {
+                nextIP = ip + inst.num;
+            }
+            else
+            {
+                nextIP = ip + 1;
+            }
+            break;
+        }
+
+        ip = nextIP;
+    }
+
+    writefln("exited because ip is %s", ip);
+    writeln(reg);
 }
